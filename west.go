@@ -19,21 +19,26 @@ var upgrader = websocket.Upgrader{
   },
 }
 
-type CometResponse struct  {
+type CometRequest struct {
+  Id string `json:"id"`
+  Method string `json:"method"`
+  Url string `json:"url"`
+}
+
+type CometResponse struct {
+  Id string `json:"id"`
   StatusCode int `json:"status"`
   Header http.Header `json:"headers"`
   Body string `json:"body"`
 }
 
-func Convert(res *http.Response) (*CometResponse, error) {
-  defer res.Body.Close()
-
+func Convert(res *http.Response, id string) (*CometResponse, error) {
   body, err := ioutil.ReadAll(res.Body)
   if err != nil {
     return nil, err
   }
 
-  return &CometResponse{res.StatusCode, res.Header, string(body)}, nil
+  return &CometResponse{id, res.StatusCode, res.Header, string(body)}, nil
 }
 
 func main() {
@@ -66,21 +71,20 @@ func handle(w http.ResponseWriter, r *http.Request) {
 
     log.Printf("--- recveived: %s\n", message)
 
-    res, err := request(string(message))
+    var creq = &CometRequest{}
+    err = json.Unmarshal(message, creq)
+    if err != nil {
+      log.Println("*** parse error:", err)
+      break
+    }
+
+    cres, err := request(creq)
     if err != nil {
       log.Println("*** request error:", err)
       break
     }
 
-    log.Println(res)
-
-    cr, err := Convert(res)
-    if err != nil {
-      log.Println("*** convert error:", err)
-      break
-    }
-
-    text, err := json.Marshal(cr)
+    text, err := json.Marshal(cres)
     if err != nil {
       log.Println("*** json error:", err)
       break
@@ -94,13 +98,22 @@ func handle(w http.ResponseWriter, r *http.Request) {
   }
 }
 
-func request(url string) (*http.Response, error) {
-  method := "GET"
-  req, err := http.NewRequest(method, url, nil)
+func request(creq *CometRequest) (*CometResponse, error) {
+  req, err := http.NewRequest(creq.Method, creq.Url, nil)
   if err != nil {
     return nil, err
   }
 
   client := &http.Client{}
-  return client.Do(req)
+  res, err := client.Do(req)
+  if res != nil {
+    defer res.Body.Close()
+  }
+  if err != nil {
+    return nil, err
+  }
+
+  log.Println(res)
+
+  return Convert(res, creq.Id)
 }
