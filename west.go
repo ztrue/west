@@ -47,20 +47,22 @@ func handle(w http.ResponseWriter, r *http.Request) {
       break
     }
 
-    log.Printf("--- recveived: %s\n", mreq)
+    go func(mt int, mreq []byte) {
+      log.Printf("--- recveived: %s\n", mreq)
 
-    mres, err := proxy.Process(mreq)
-    if err != nil {
-      log.Println("*** proxy error:", err)
-      break
-    }
+      mres, err := proxy.Process(mreq)
+      if err != nil {
+        log.Println("*** proxy error:", err)
+        return
+      }
 
-    err = c.WriteMessage(mt, mres)
-    if err != nil {
-      log.Println("*** write error:", err)
-      break
-    }
+      err = c.WriteMessage(mt, mres)
+      if err != nil {
+        log.Println("*** write error:", err)
+        return
+      }
 
-    log.Printf("--- sent: %s\n", mres)
+      log.Printf("--- sent: %s\n", mres)
+    }(mt, mreq)
   }
 }
