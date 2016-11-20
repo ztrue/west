@@ -1,6 +1,7 @@
 package proxy
 
 import (
+  "encoding/json"
   "io/ioutil"
   "net/http"
 )
@@ -18,12 +19,25 @@ type CometResponse struct {
   Body string `json:"body"`
 }
 
-func Convert(res *http.Response, id string) (*CometResponse, error) {
+func DecodeRequest(message []byte) (*CometRequest, error) {
+  var creq = &CometRequest{}
+  err := json.Unmarshal(message, creq)
+  if err != nil {
+    return nil, err
+  }
+  return creq, nil
+}
+
+func ConvertResponse(res *http.Response, id string) (*CometResponse, error) {
   body, err := ioutil.ReadAll(res.Body)
   if err != nil {
     return nil, err
   }
   return &CometResponse{id, res.StatusCode, res.Header, string(body)}, nil
+}
+
+func EncodeResponse(cres *CometResponse) ([]byte, error) {
+  return json.Marshal(cres)
 }
 
 func Request(creq *CometRequest) (*CometResponse, error) {
@@ -41,5 +55,19 @@ func Request(creq *CometRequest) (*CometResponse, error) {
     return nil, err
   }
 
-  return Convert(res, creq.Id)
+  return ConvertResponse(res, creq.Id)
+}
+
+func Process(message []byte) ([]byte, error) {
+  creq, err := DecodeRequest(message)
+  if err != nil {
+    return nil, err
+  }
+
+  cres, err := Request(creq)
+  if err != nil {
+    return nil, err
+  }
+
+  return EncodeResponse(cres)
 }

@@ -1,7 +1,6 @@
 package main
 
 import (
-  "encoding/json"
   "flag"
   "fmt"
   "log"
@@ -31,6 +30,9 @@ func main() {
 
 func handle(w http.ResponseWriter, r *http.Request) {
   c, err := upgrader.Upgrade(w, r, nil)
+  if c != nil {
+    defer c.Close()
+  }
   if err != nil {
     log.Println("*** upgrade error:", err)
     return
@@ -38,40 +40,27 @@ func handle(w http.ResponseWriter, r *http.Request) {
 
   log.Println("--- connected")
 
-  defer c.Close()
-
   for {
-    mt, message, err := c.ReadMessage()
+    mt, mreq, err := c.ReadMessage()
     if err != nil {
       log.Println("*** read error:", err)
       break
     }
 
-    log.Printf("--- recveived: %s\n", message)
+    log.Printf("--- recveived: %s\n", mreq)
 
-    var creq = &proxy.CometRequest{}
-    err = json.Unmarshal(message, creq)
+    mres, err := proxy.Process(mreq)
     if err != nil {
-      log.Println("*** parse error:", err)
+      log.Println("*** proxy error:", err)
       break
     }
 
-    cres, err := proxy.Request(creq)
-    if err != nil {
-      log.Println("*** request error:", err)
-      break
-    }
-
-    text, err := json.Marshal(cres)
-    if err != nil {
-      log.Println("*** json error:", err)
-      break
-    }
-
-    err = c.WriteMessage(mt, text)
+    err = c.WriteMessage(mt, mres)
     if err != nil {
       log.Println("*** write error:", err)
       break
     }
+
+    log.Printf("--- sent: %s\n", mres)
   }
 }
