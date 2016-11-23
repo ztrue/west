@@ -20,7 +20,6 @@ var upgrader = websocket.Upgrader{
 
 func main() {
   flag.Parse()
-  log.SetFlags(0)
 
   addr := fmt.Sprintf("%s:%s", *host, *port)
 
