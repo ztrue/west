@@ -42,28 +42,25 @@ func handle(w http.ResponseWriter, r *http.Request) {
 
   for {
     var creq = &proxy.CometRequest{}
-    err := c.ReadJSON(creq)
-    if err != nil {
+    if err := c.ReadJSON(creq); err != nil {
       log.Println("*** read error:", err)
       break
     }
 
     go func(creq *proxy.CometRequest) {
-      log.Printf("--- recveived: %s\n", creq)
+      log.Println("--- recveived:", creq)
 
       var message interface{}
-      message, err = proxy.Request(creq)
+      message, err := proxy.Request(creq)
       if err != nil {
         message = proxy.ConvertError(err, "")
       }
 
-      err = c.WriteJSON(message)
-      if err != nil {
+      if err := c.WriteJSON(message); err != nil {
         log.Println("*** write error:", err)
-        return
+      } else {
+        log.Println("--- sent:", message)
       }
-
-      log.Printf("--- sent: %s\n", message)
     }(creq)
   }
 }
