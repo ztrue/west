@@ -32,6 +32,13 @@ func ConvertResponse(res *http.Response, id string) (*CometResponse, error) {
   return &CometResponse{id, res.StatusCode, res.Header, string(body)}, nil
 }
 
+func ConvertError(err error, id string) (*CometError) {
+  return &CometError{
+    Id: id,
+    Error: err.Error(),
+  }
+}
+
 func Request(creq *CometRequest) (*CometResponse, error) {
   req, err := http.NewRequest(creq.Method, creq.Url, nil)
   if err != nil {

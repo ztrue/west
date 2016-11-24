@@ -51,23 +51,19 @@ func handle(w http.ResponseWriter, r *http.Request) {
     go func(creq *proxy.CometRequest) {
       log.Printf("--- recveived: %s\n", creq)
 
-      cres, err := proxy.Request(creq)
+      var message interface{}
+      message, err = proxy.Request(creq)
       if err != nil {
-        log.Println("*** proxy error:", err)
-        err = c.WriteJSON(proxy.CometError{Error: err.Error()})
-        if err != nil {
-          log.Println("*** write err error:", err)
-        }
-        return
+        message = proxy.ConvertError(err, "")
       }
 
-      err = c.WriteJSON(cres)
+      err = c.WriteJSON(message)
       if err != nil {
         log.Println("*** write error:", err)
         return
       }
 
-      log.Printf("--- sent: %s\n", cres)
+      log.Printf("--- sent: %s\n", message)
     }(creq)
   }
 }
