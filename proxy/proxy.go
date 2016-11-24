@@ -10,6 +10,7 @@ type CometRequest struct {
   Id string `json:"id"`
   Method string `json:"method"`
   Url string `json:"url"`
+  Header http.Header `json:"headers"`
 }
 
 type CometResponse struct {
@@ -45,6 +46,8 @@ func Request(creq *CometRequest) (*CometResponse, error) {
   if err != nil {
     return nil, err
   }
+
+  req.Header = creq.Header
 
   client := &http.Client{}
   res, err := client.Do(req)
