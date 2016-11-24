@@ -41,16 +41,17 @@ func handle(w http.ResponseWriter, r *http.Request) {
   log.Println("--- connected")
 
   for {
-    mt, mreq, err := c.ReadMessage()
+    var creq = &proxy.CometRequest{}
+    err := c.ReadJSON(creq)
     if err != nil {
       log.Println("*** read error:", err)
       break
     }
 
-    go func(mt int, mreq []byte) {
-      log.Printf("--- recveived: %s\n", mreq)
+    go func(creq *proxy.CometRequest) {
+      log.Printf("--- recveived: %s\n", creq)
 
-      mres, err := proxy.Process(mreq)
+      cres, err := proxy.Request(creq)
       if err != nil {
         log.Println("*** proxy error:", err)
         err = c.WriteJSON(proxy.CometError{Error: err.Error()})
@@ -60,13 +61,13 @@ func handle(w http.ResponseWriter, r *http.Request) {
         return
       }
 
-      err = c.WriteMessage(mt, mres)
+      err = c.WriteJSON(cres)
       if err != nil {
         log.Println("*** write error:", err)
         return
       }
 
-      log.Printf("--- sent: %s\n", mres)
-    }(mt, mreq)
+      log.Printf("--- sent: %s\n", cres)
+    }(creq)
   }
 }
