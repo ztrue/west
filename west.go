@@ -52,6 +52,10 @@ func handle(w http.ResponseWriter, r *http.Request) {
       mres, err := proxy.Process(mreq)
       if err != nil {
         log.Println("*** proxy error:", err)
+        err = c.WriteJSON(proxy.CometError{Error: err.Error()})
+        if err != nil {
+          log.Println("*** write err error:", err)
+        }
         return
       }
 

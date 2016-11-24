@@ -20,6 +20,11 @@ type CometResponse struct {
   Body string `json:"body"`
 }
 
+type CometError struct {
+  Id string `json:"id"`
+  Error string `json:"error"`
+}
+
 func DecodeRequest(message []byte) (*CometRequest, error) {
   var creq = &CometRequest{}
   err := json.Unmarshal(message, creq)
